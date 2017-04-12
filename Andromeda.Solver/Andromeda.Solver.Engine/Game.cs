@@ -15,12 +15,29 @@ namespace Andromeda.Solver.Engine
         public List<Cell> Cells { get; set; }
         public Game(int size, int symbols, List<Cell> knownCells)
         {
-            if(knownCells == null) knownCells = new List<Cell>();
+            if(knownCells == null)
+                knownCells = new List<Cell>();
             Cells = new List<Cell>();
             Symbols = symbols;
             Size = size;
             PropogateEmptyCells(size);
+            PopulateKnownCells(knownCells);
+        }
 
+        private void PopulateKnownCells(List<Cell> knownCells)
+        {
+            knownCells.ForEach(a =>
+            {
+                var cell =
+                    Cells.Single(
+                        b =>
+                            b.Position.Horizontal == a.Position.Horizontal && b.Position.Vertical == a.Position.Vertical);
+                cell.Position.Vertical = a.Position.Vertical;
+                cell.Position.Horizontal = a.Position.Horizontal;
+                cell.Position.Group= a.Position.Group;
+                cell.Preconfigured = a.Preconfigured;
+                cell.Symbol = a.Symbol;
+            });
         }
 
         private void PropogateEmptyCells(int size)
@@ -36,9 +53,72 @@ namespace Andromeda.Solver.Engine
         {
             if (Cells.Any(a => !a.Symbol.HasValue))
                 return GameStatus.Incomplete;
-            throw new NotImplementedException();
-
+            if (VerticalRowsAreValid() && HorizontalRowsAreValid() && GroupsAreValid())
+                return GameStatus.Complete;
+            return GameStatus.Broken;
         }
+
+        private bool GroupsAreValid()
+        {
+            var valid = true;
+            foreach(var x in Cells.Select(a=>a.Position.Group).Distinct())
+            {
+                if (valid)
+                {
+                    var applicableCells = Cells.Where(a => a.Position.Group == x).ToList();
+                    applicableCells.ForEach(a =>
+                    {
+                        if (applicableCells.Count(b => a.Symbol == b.Symbol) > 1)
+                        {
+                            valid = false;
+                        }
+                    });
+                }
+            }
+            return valid;
+        }
+
+        private bool HorizontalRowsAreValid()
+        {
+            var valid = true;
+            for (var x = 0; x < Size; x++)
+            {
+                if (valid)
+                {
+                    var applicableCells = Cells.Where(a => a.Position.Horizontal == x).ToList();
+                    applicableCells.ForEach(a =>
+                    {
+                        if (applicableCells.Count(b => a.Symbol == b.Symbol) > 1)
+                        {
+                            valid = false;
+                        }
+                    });
+                }
+            }
+            return valid;
+        }
+
+
+        private bool VerticalRowsAreValid()
+        {
+            var valid = true;
+            for (var x = 0; x < Size; x++)
+            {
+                if (valid)
+                {
+                    var applicableCells = Cells.Where(a => a.Position.Vertical == x).ToList();
+                    applicableCells.ForEach(a =>
+                    {
+                        if (applicableCells.Count(b => a.Symbol == b.Symbol) > 1)
+                        {
+                            valid = false;
+                        }
+                    });
+                }
+            }
+            return valid;
+        }
+
         public class GameStatus
         {
             public const string Complete = "Complete";

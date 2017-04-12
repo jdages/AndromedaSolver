@@ -11,6 +11,6 @@
         }
         public int Horizontal { get; set; }
         public int Vertical { get; set; }
-        public int? Group { get; set; }
+        public int Group { get; set; }
     }
 }
